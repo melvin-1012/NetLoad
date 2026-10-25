@@ -843,3 +843,70 @@ export function performFTest(period1Data, period2Data, alpha = 0.05) {
     assumptionsWarning: 'Assumption: Both sample intervals are assumed to be approximately normally distributed and independent. In real-world telemetry, adjacent packets or polling intervals may exhibit serial autocorrelation, which inflates Type I error rates.'
   };
 }
+
+/**
+ * MODULE 1 (CO1): Discrete Conditional Probability & Bayes' Theorem for Intelligent Decision-Making
+ * 
+ * Topics Covered:
+ * - Topic 1.2: Conditional Probability: P(Alert | Congestion)
+ * - Topic 1.3: Total Probability Theorem:
+ *     P(Alert) = P(Alert | Congestion) * P(Congestion) + P(Alert | Normal) * P(Normal)
+ * - Topic 1.3 & 1.4: Bayes' Theorem & Posterior Calculation:
+ *     P(Congestion | Alert) = [P(Alert | Congestion) * P(Congestion)] / P(Alert)
+ * 
+ * Evaluates decisions of intelligent systems (CO1):
+ * If P(Congestion | Alert) >= confidenceThreshold (e.g. 0.80), the intelligent controller
+ * confirms congestion and triggers rerouting/autoscaling, suppressing false alarms.
+ * 
+ * @param {number[]} loads Array of traffic loads (Mbps)
+ * @param {number} [congestionThreshold=1000] Threshold above which traffic is considered congested
+ * @param {number} [sensitivity=0.90] True positive rate P(Alert | Congestion)
+ * @param {number} [falseAlarmRate=0.08] False positive rate P(Alert | Normal)
+ * @param {number} [confidenceThreshold=0.80] Decision boundary
+ */
+export function calculateBayesianDecision(
+  loads,
+  congestionThreshold = 1000,
+  sensitivity = 0.90,
+  falseAlarmRate = 0.08,
+  confidenceThreshold = 0.80
+) {
+  if (!loads || loads.length === 0) return null;
+  const n = loads.length;
+  const congestedCount = loads.filter(x => x > congestionThreshold).length;
+  const normalCount = n - congestedCount;
+
+  // Priors
+  const pCongestion = congestedCount / n;
+  const pNormal = 1 - pCongestion;
+
+  // Total Probability Theorem: P(Alert) = P(Alert|S1)P(S1) + P(Alert|S2)P(S2)
+  const pAlertAndCongestion = sensitivity * pCongestion;
+  const pAlertAndNormal = falseAlarmRate * pNormal;
+  const pAlert = pAlertAndCongestion + pAlertAndNormal;
+
+  // Bayes' Theorem: P(Congestion | Alert) = P(Alert & Congestion) / P(Alert)
+  const pCongestionGivenAlert = pAlert > 0 ? (pAlertAndCongestion / pAlert) : 0;
+
+  // Intelligent Decision Rule (CO1)
+  const isActionTriggered = pCongestionGivenAlert >= confidenceThreshold;
+
+  return {
+    n,
+    congestionThreshold,
+    congestedCount,
+    normalCount,
+    pCongestion: Number(pCongestion.toFixed(4)),
+    pNormal: Number(pNormal.toFixed(4)),
+    sensitivity: Number(sensitivity.toFixed(3)),
+    falseAlarmRate: Number(falseAlarmRate.toFixed(3)),
+    pAlertAndCongestion: Number(pAlertAndCongestion.toFixed(4)),
+    pAlertAndNormal: Number(pAlertAndNormal.toFixed(4)),
+    pAlert: Number(pAlert.toFixed(4)),
+    pCongestionGivenAlert: Number(pCongestionGivenAlert.toFixed(4)),
+    confidenceThreshold,
+    isActionTriggered,
+    decisionLabel: isActionTriggered ? 'Reroute & Autoscale Triggered' : 'Alert Suppressed (False-Alarm Protection)'
+  };
+}
+

@@ -24,7 +24,8 @@ import {
   calculateMovingAverages,
   calculateLinearTrend,
   performChiSquareTest,
-  performFTest
+  performFTest,
+  calculateBayesianDecision
 } from './src/math/statistics.js';
 
 import { CAMPUS_DATASETS } from './src/data/campusTrafficData.js';
@@ -151,6 +152,15 @@ const csvString = exportToCSV(fwObs);
 const parsed = parseCSVData(csvString);
 console.log(`Exported and re-parsed CSV rows: ${parsed.data.length}`);
 console.assert(parsed.data.length === 111, 'CSV roundtrip failed');
+
+console.log('\n--- 7. Testing Module 1 (CO1) Bayesian Decision Rule ---');
+const bayes = calculateBayesianDecision(fwLoads, 1000, 0.90, 0.08, 0.80);
+console.log(`Prior P(Congestion): ${bayes.pCongestion} (Count: ${bayes.congestedCount}/${bayes.n})`);
+console.log(`Total Prob P(Alert): ${bayes.pAlert}`);
+console.log(`Posterior P(Congestion | Alert): ${bayes.pCongestionGivenAlert} (Action: ${bayes.decisionLabel})`);
+console.assert(bayes.congestedCount === 40, 'Should have 40 congested points out of 111');
+console.assert(Math.abs(bayes.pCongestion - 0.3604) < 1e-3, 'Prior P(Congestion) failed');
+console.assert(bayes.isActionTriggered === true, 'Should trigger autoscale for >= 80% confidence');
 
 console.log('\n======================================================');
 console.log('ALL MATHEMATICAL, SYLLABUS & CAMPUS DATA TESTS PASSED 100%');

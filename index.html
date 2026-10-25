@@ -237,6 +237,82 @@
               Loading statistical inference...
             </div>
           </div>
+
+          <!-- MODULE 1 (CO1): BAYESIAN DECISION ENGINE IN INTELLIGENT SYSTEMS -->
+          <div class="surface-instrument" style="margin-top: 24px;">
+            <div class="instrument-header">
+              <div class="instrument-title">
+                <span>Module 1 (CO1) — Discrete Event Probability & Bayes' Decision Rule</span>
+              </div>
+              <div class="instrument-meta">
+                <span>Intelligent Load Balancer Alert Verification (Topic 1.2 – 1.4)</span>
+              </div>
+            </div>
+            <div class="instrument-body">
+              <div class="editorial-grid-12" style="margin-bottom: 0; align-items: stretch;">
+                <div class="col-4">
+                  <div class="formula-callout" style="margin-top: 0;">
+                    <span class="formula-label">Discrete Operational States</span>
+                    <strong>S₁ (Congestion):</strong> Load &gt; <span id="bayes-threshold-label" class="mono-num">1000</span> Mbps<br>
+                    <strong>S₂ (Normal):</strong> Load ≤ <span id="bayes-threshold-label2" class="mono-num">1000</span> Mbps<br>
+                    <strong>Event A (Alert):</strong> Router Buffer / IDS Warning
+                  </div>
+                  <div class="formula-callout">
+                    <span class="formula-label">Total Probability & Bayes' Rule</span>
+                    <code>P(A) = P(A|S₁)P(S₁) + P(A|S₂)P(S₂)</code><br>
+                    <code>P(S₁|A) = [P(A|S₁) · P(S₁)] / P(A)</code>
+                  </div>
+                </div>
+
+                <div class="col-8">
+                  <div class="stat-strip-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 14px;">
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Prior P(S₁)</div>
+                      <div class="stat-tile-val mono-num" id="bayes-prior-s1">--</div>
+                      <div class="stat-tile-sub" id="bayes-prior-sub">-- samples</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Likelihood P(A|S₁)</div>
+                      <div class="stat-tile-val mono-num" id="bayes-likelihood">0.900</div>
+                      <div class="stat-tile-sub">Detection Rate</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">False Alarm P(A|S₂)</div>
+                      <div class="stat-tile-val mono-num" id="bayes-false-alarm">0.080</div>
+                      <div class="stat-tile-sub">False Positive Rate</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Evidence P(A)</div>
+                      <div class="stat-tile-val mono-num" id="bayes-evidence-pa">--</div>
+                      <div class="stat-tile-sub">Total Probability</div>
+                    </div>
+                  </div>
+
+                  <div style="background: var(--bg-surface-alt); padding: 14px 18px; border-radius: var(--radius-sm); border-left: 3px solid var(--teal); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                      <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--slate); font-weight: 600;">
+                        Posterior Probability P(Congestion | Alert)
+                      </div>
+                      <div class="mono-num" id="bayes-posterior-val" style="font-size: 1.5rem; font-weight: 700; color: var(--teal);">
+                        --%
+                      </div>
+                      <div style="font-size: 0.75rem; color: var(--slate);" id="bayes-calc-breakdown">
+                        --
+                      </div>
+                    </div>
+                    <div>
+                      <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--slate); font-weight: 600;">
+                        Intelligent Decision (CO1)
+                      </div>
+                      <div id="bayes-decision-badge" class="nav-badge-pill" style="font-size: 0.85rem; padding: 6px 12px; font-weight: 600; color: var(--teal); border-color: rgba(23, 107, 97, 0.4);">
+                        --
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- ===================================================================
@@ -433,37 +509,9 @@
             </div>
           </div>
 
-          <!-- Moving Average Mathematical Foundation -->
+          <!-- Expanded Campus Telemetry Observations Data Table -->
           <div class="editorial-grid-12">
-            <div class="col-5">
-              <div class="surface-instrument" style="height: 100%;">
-                <div class="instrument-header">
-                  <div class="instrument-title">
-                    <span id="trend-ma-formula-label">Smoothing Theory & Lecture Alignment</span>
-                  </div>
-                  <div class="instrument-meta">Module 4 Alignment</div>
-                </div>
-                <div class="instrument-body">
-                  <div class="formula-callout">
-                    <span class="formula-label">Variance Attenuation Formula</span>
-                    <code>Var(MAₜ) = σ² / k   (for independent observations)</code>
-                  </div>
-                  <p id="trend-ma-desc" style="font-size: 0.86rem; color: var(--ink-secondary); margin-bottom: 12px;">
-                    Increasing window size $k$ dampens high-frequency jitter by factor $k$. Centered windows (3-period & 5-period centered) eliminate phase distortion for retrospective trend reporting.
-                  </p>
-                  <div class="formula-callout">
-                    <span class="formula-label">Linear Regression Trend Line</span>
-                    <code>y = β · t + α,   β = [N∑ty - (∑t)(∑y)] / [N∑t² - (∑t)²]</code>
-                  </div>
-                  <p style="font-size: 0.82rem; color: var(--slate);">
-                    Evaluates long-term weekly structural drift across the 111 campus observation points.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Underlying Observations Data Table (7 Columns) -->
-            <div class="col-7">
+            <div class="col-12">
               <div class="surface-instrument">
                 <div class="instrument-header">
                   <div class="instrument-title">
@@ -474,19 +522,19 @@
                   </div>
                 </div>
                 <div class="instrument-body" style="padding: 0;">
-                  <div class="table-container" style="max-height: 340px; border: none;">
+                  <div class="table-container" style="max-height: 500px; border: none;">
                     <table class="scientific-table" id="observations-data-table">
                       <thead>
                         <tr>
-                          <th>Idx</th>
+                          <th>Idx (t)</th>
                           <th>Timestamp (IST)</th>
                           <th>Total (Mbps)</th>
-                          <th>Rx</th>
-                          <th>Tx</th>
-                          <th>Deviation</th>
+                          <th>Rx (Mbps)</th>
+                          <th>Tx (Mbps)</th>
+                          <th>Deviation (x - μ)</th>
                           <th>z-Score</th>
-                          <th>MA</th>
-                          <th>Status</th>
+                          <th>MA (CMA)</th>
+                          <th>Classification / Status</th>
                         </tr>
                       </thead>
                       <tbody id="observations-table-body">

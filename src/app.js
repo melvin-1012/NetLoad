@@ -25,7 +25,8 @@ import {
   calculateMovingAverages,
   calculateLinearTrend,
   performChiSquareTest,
-  performFTest
+  performFTest,
+  calculateBayesianDecision
 } from './math/statistics.js';
 
 import { CAMPUS_DATASETS } from './data/campusTrafficData.js';
@@ -354,6 +355,42 @@ function updateOverviewSection({ data, loads, mean, median, modeObj, sigma, vari
       (isExceed 
         ? `ALERT: Current load exceeds provisioned capacity boundary of ${state.threshold} Mbps. Dynamic autoscaling or QoS throttling required.`
         : `Normal operation: Bandwidth headroom remains adequate. The probability of any random sample exceeding ${state.threshold} Mbps is estimated at ${(riskProb * 100).toFixed(2)}%.`);
+  }
+
+  // Update Module 1 (CO1) Bayesian Decision Rule
+  const bayes = calculateBayesianDecision(loads, state.threshold, 0.90, 0.08, 0.80);
+  if (bayes) {
+    const elThresh1 = document.getElementById('bayes-threshold-label');
+    const elThresh2 = document.getElementById('bayes-threshold-label2');
+    const elPrior = document.getElementById('bayes-prior-s1');
+    const elPriorSub = document.getElementById('bayes-prior-sub');
+    const elEvidence = document.getElementById('bayes-evidence-pa');
+    const elPosterior = document.getElementById('bayes-posterior-val');
+    const elBreakdown = document.getElementById('bayes-calc-breakdown');
+    const elBadge = document.getElementById('bayes-decision-badge');
+
+    if (elThresh1) elThresh1.textContent = state.threshold;
+    if (elThresh2) elThresh2.textContent = state.threshold;
+    if (elPrior) elPrior.textContent = `${(bayes.pCongestion * 100).toFixed(1)}%`;
+    if (elPriorSub) elPriorSub.textContent = `${bayes.congestedCount} / ${bayes.n} samples`;
+    if (elEvidence) elEvidence.textContent = `${(bayes.pAlert * 100).toFixed(1)}%`;
+    if (elPosterior) elPosterior.textContent = `${(bayes.pCongestionGivenAlert * 100).toFixed(1)}%`;
+    if (elBreakdown) {
+      elBreakdown.textContent = `P(S₁|A) = [0.90 × ${bayes.pCongestion.toFixed(3)}] / ${bayes.pAlert.toFixed(3)} = ${(bayes.pCongestionGivenAlert * 100).toFixed(1)}%`;
+    }
+    if (elBadge) {
+      if (bayes.isActionTriggered) {
+        elBadge.textContent = `✓ Autoscale / Reroute Triggered (${(bayes.pCongestionGivenAlert * 100).toFixed(1)}% ≥ 80%)`;
+        elBadge.style.color = '#176B61';
+        elBadge.style.borderColor = 'rgba(23, 107, 97, 0.4)';
+        elBadge.style.background = 'rgba(23, 107, 97, 0.08)';
+      } else {
+        elBadge.textContent = `✕ Alert Suppressed (False-Alarm Protection)`;
+        elBadge.style.color = '#B96E2E';
+        elBadge.style.borderColor = 'rgba(185, 110, 46, 0.4)';
+        elBadge.style.background = 'rgba(185, 110, 46, 0.08)';
+      }
+    }
   }
 }
 
