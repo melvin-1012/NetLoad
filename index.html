@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NETLOAD — The Statistical Observatory | Network Load Analysis Using Normal Distribution</title>
+  <meta name="description" content="A precision scientific observatory for network traffic uncertainty analysis using the Normal Distribution.">
+  <link rel="stylesheet" href="/src/styles/observatory.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <div class="brand-row">
+          <div class="brand-mark" id="brand-logo-container" aria-hidden="true">
+            <!-- Brand bell icon injected via JS -->
+          </div>
+          <div>
+            <div class="brand-title">NETLOAD</div>
+            <div class="brand-sub">The Statistical Observatory</div>
+          </div>
+        </div>
+        <div class="project-meta-tag">Network Traffic Statistical Observatory</div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Observatory Sections</div>
+        <ul class="nav-list" role="tablist">
+          <li class="nav-item">
+            <a href="#overview" class="nav-link active" data-section="overview" role="tab" aria-selected="true" id="nav-overview">
+              <span><span class="nav-link-code">00</span>Overview</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#distribution" class="nav-link" data-section="distribution" role="tab" aria-selected="false" id="nav-distribution">
+              <span><span class="nav-link-code">01</span>Continuous Distribution</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#time-series" class="nav-link" data-section="time-series" role="tab" aria-selected="false" id="nav-time-series">
+              <span><span class="nav-link-code">02</span>Traffic Trends & MA</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#validation" class="nav-link" data-section="validation" role="tab" aria-selected="false" id="nav-validation">
+              <span><span class="nav-link-code">03</span>Statistical Validation (χ² & F)</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#methodology" class="nav-link" data-section="methodology" role="tab" aria-selected="false" id="nav-methodology">
+              <span><span class="nav-link-code">04</span>CSV Interface & Sandbox</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Sidebar Quick Controls -->
+      <div class="sidebar-controls">
+        <div class="control-group">
+          <label class="control-label" for="traffic-scenario-select">
+            <span>Primary Dataset Source</span>
+          </label>
+          <select id="traffic-scenario-select" class="control-select">
+            <option value="perimeterFirewall" selected>Campus Perimeter Firewall (Actual — 111 samples)</option>
+            <option value="coreSwitch">Campus Core Switch (Actual — 111 samples)</option>
+            <option value="custom">Custom CSV Ingestion</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="global-threshold-input">
+            <span>Capacity Threshold (T)</span>
+            <span id="global-threshold-val" class="mono-num">1500 Mbps</span>
+          </label>
+          <input type="range" id="global-threshold-input" class="control-range" min="200" max="3600" step="50" value="1500">
+        </div>
+
+        <button id="btn-reset-demo" class="btn-secondary-sm" title="Restore primary Perimeter Firewall campus dataset">
+          Reset to Perimeter Firewall
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="main-workspace" id="main-content">
+      <!-- Top Telemetry Bar -->
+      <header class="top-bar">
+        <div class="breadcrumbs">
+          <span>NETLOAD</span>
+          <span>/</span>
+          <span class="active-crumb" id="breadcrumb-active-section">00 Overview</span>
+        </div>
+
+        <div class="telemetry-strip" aria-label="System Statistical Telemetry">
+          <div class="telemetry-item">
+            <span class="telemetry-label">Sample Mean μ:</span>
+            <span class="telemetry-value mono-num" id="telemetry-mean">--</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Std Dev σ:</span>
+            <span class="telemetry-value mono-num" id="telemetry-sigma">--</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Selected Obs:</span>
+            <span class="telemetry-value mono-num" id="telemetry-selected-load">--</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">z-Score:</span>
+            <span class="telemetry-value mono-num" id="telemetry-zscore">--</span>
+          </div>
+          <div class="telemetry-badge">
+            <span class="pulse-dot"></span>
+            <span id="telemetry-dataset-type">Perimeter Firewall (Actual, N=111)</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Canvas -->
+      <div class="content-canvas">
+        
+        <!-- ===================================================================
+             SECTION 0: OVERVIEW — "NETWORK AT A GLANCE"
+             =================================================================== -->
+        <section id="pane-overview" class="section-pane active" role="tabpanel" aria-labelledby="nav-overview">
+          <div class="editorial-header">
+            <div>
+              <div class="editorial-tagline">
+                <span>00 / INSTRUMENT OVERVIEW</span>
+              </div>
+              <h1 class="editorial-h1">Campus Network Load at a Glance</h1>
+              <p class="editorial-intro">
+                Continuous stochastic telemetry from campus gateway routing. Evaluates empirical network load against Gaussian equilibrium parameters and central tendency metrics.
+              </p>
+            </div>
+          </div>
+
+          <!-- Dataset Notice Banner -->
+          <div class="simulation-notice-bar" role="alert">
+            <div id="overview-notice-text">
+              <strong>Actual Campus Data Active:</strong> Perimeter Firewall gateway (Cleaned_Firewall_Traffic.csv) comprising 25 interfaces (Rx + Tx) across Oct 17 to Oct 24, 2026.
+            </div>
+            <span class="mono-num" id="overview-obs-counter">N = 111 Real Telemetry Samples</span>
+          </div>
+
+          <!-- Central Tendency & Dispersion Cards -->
+          <div class="central-tendency-grid">
+            <div class="ct-card">
+              <div class="ct-label">Arithmetic Mean (μ)</div>
+              <div class="ct-val mono-num"><span id="overview-val-mean">967.6</span> <span style="font-size: 0.9rem; font-weight: normal;">Mbps</span></div>
+              <div class="ct-desc">Expected value: center of mass (CO4)</div>
+            </div>
+
+            <div class="ct-card">
+              <div class="ct-label">Sample Median (M)</div>
+              <div class="ct-val mono-num"><span id="overview-val-median">556.7</span> <span style="font-size: 0.9rem; font-weight: normal;">Mbps</span></div>
+              <div class="ct-desc">50th percentile (robust to peak surges)</div>
+            </div>
+
+            <div class="ct-card">
+              <div class="ct-label">Modal Class Mode</div>
+              <div class="ct-val mono-num"><span id="overview-val-mode">347.4</span> <span style="font-size: 0.9rem; font-weight: normal;">Mbps</span></div>
+              <div class="ct-desc">Interpolated continuous peak frequency</div>
+            </div>
+
+            <div class="ct-card active-skew">
+              <div class="ct-label">Skewness Index (g₁)</div>
+              <div class="ct-val mono-num"><span id="overview-val-skewness">+1.13</span></div>
+              <div class="ct-desc">Mean &gt; Median &gt; Mode (Right-Skewed)</div>
+            </div>
+
+            <div class="ct-card">
+              <div class="ct-label">Standard Deviation (σ)</div>
+              <div class="ct-val mono-num"><span id="overview-val-sigma">867.7</span> <span style="font-size: 0.9rem; font-weight: normal;">Mbps</span></div>
+              <div class="ct-desc">Variance s² = <span id="overview-val-variance" class="mono-num">752924.1</span></div>
+            </div>
+
+            <div class="ct-card">
+              <div class="ct-label">Exceedance Risk P(X &gt; T)</div>
+              <div class="ct-val mono-num"><span id="overview-val-risk">26.9%</span></div>
+              <div class="ct-desc">Buffer overflow risk</div>
+            </div>
+          </div>
+
+          <!-- Main Analytical Workspace: 12-Column Grid -->
+          <div class="editorial-grid-12">
+            <!-- Large Time-Series Instrument (Focal Point: 8 Columns) -->
+            <div class="col-8">
+              <div class="surface-instrument">
+                <div class="instrument-header">
+                  <div class="instrument-title">
+                    <span>Campus Network Load Trajectory [xₜ: Oct 17 – Oct 24, 2026]</span>
+                  </div>
+                  <div class="instrument-meta">
+                    <span>Scrub or hover points to inspect</span>
+                  </div>
+                </div>
+                <div class="instrument-body">
+                  <div id="overview-timeseries-container" style="min-height: 320px;">
+                    <!-- SVG Chart injected via JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Normal Distribution Bell Preview (4 Columns) -->
+            <div class="col-4">
+              <div class="surface-instrument" style="height: 100%; display: flex; flex-direction: column;">
+                <div class="instrument-header">
+                  <div class="instrument-title">
+                    <span>Fitted Gaussian Density & Histogram Overlay</span>
+                  </div>
+                  <div class="instrument-meta">
+                    <span class="mono-num">N(μ, σ²)</span>
+                  </div>
+                </div>
+                <div class="instrument-body" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div id="overview-bell-container" style="min-height: 220px;">
+                    <!-- SVG Chart injected via JS -->
+                  </div>
+                  <div class="formula-callout" style="margin-bottom: 0;">
+                    <span class="formula-label">Continuous Probability Model</span>
+                    <code>f(x) = [1/(σ√(2π))] · e^[-(x-μ)²/(2σ²)]</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Scientific Interpretation Box -->
+          <div class="interpretation-box" id="overview-interpretation">
+            <div class="interpretation-title">
+              <span>Statistical Inference on Selected Observation</span>
+            </div>
+            <div class="interpretation-text" id="overview-interpretation-text">
+              Loading statistical inference...
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SECTION 1: PROBABILITY AND DISTRIBUTION
+             =================================================================== -->
+        <section id="pane-distribution" class="section-pane" role="tabpanel" aria-labelledby="nav-distribution">
+          <div class="editorial-header">
+            <div>
+              <div class="editorial-tagline">
+                <span>01 / CONTINUOUS PROBABILITY THEORY</span>
+              </div>
+              <h1 class="editorial-h1">Probability & Continuous Normal Distribution</h1>
+              <p class="editorial-intro">
+                Network traffic throughput is defined as a continuous random variable $X \in [0, \infty)$. Evaluate the analytical Probability Density Function $f(x)$, Cumulative Distribution Function $F(x)$, standardized $Z$-scores, and the 68–95–99.7 Empirical Rule.
+              </p>
+            </div>
+          </div>
+
+          <!-- Interactive Control Toolbar -->
+          <div class="surface-instrument" style="margin-bottom: 24px;">
+            <div class="interactive-toolbar">
+              <div class="toolbar-group">
+                <span class="toolbar-label">Analytical Evaluation Mode:</span>
+                <div class="radio-group-tabs" id="dist-mode-tabs">
+                  <button type="button" class="radio-tab-btn active" data-mode="tail_upper">Upper Tail P(X &gt; x)</button>
+                  <button type="button" class="radio-tab-btn" data-mode="tail_lower">Lower Tail P(X ≤ x)</button>
+                  <button type="button" class="radio-tab-btn" data-mode="interval">Interval P(a &lt; X &lt; b)</button>
+                  <button type="button" class="radio-tab-btn" data-mode="empirical">Empirical Rule (kσ)</button>
+                </div>
+              </div>
+
+              <!-- Parameter Controls -->
+              <div class="toolbar-group" id="dist-param-single">
+                <label for="dist-input-x" class="toolbar-label">Capacity x (Mbps):</label>
+                <input type="number" id="dist-input-x" class="control-input mono-num" style="width: 100px;" value="1500" step="50">
+              </div>
+
+              <div class="toolbar-group" id="dist-param-interval" style="display: none;">
+                <label for="dist-input-a" class="toolbar-label">Lower a:</label>
+                <input type="number" id="dist-input-a" class="control-input mono-num" style="width: 90px;" value="500" step="50">
+                <label for="dist-input-b" class="toolbar-label">Upper b:</label>
+                <input type="number" id="dist-input-b" class="control-input mono-num" style="width: 90px;" value="1500" step="50">
+              </div>
+
+              <div class="toolbar-group" id="dist-param-empirical" style="display: none;">
+                <span class="toolbar-label">Empirical Span:</span>
+                <div class="radio-group-tabs" id="dist-empirical-tabs">
+                  <button type="button" class="radio-tab-btn active" data-level="1">μ ± 1σ (68.27%)</button>
+                  <button type="button" class="radio-tab-btn" data-level="2">μ ± 2σ (95.45%)</button>
+                  <button type="button" class="radio-tab-btn" data-level="3">μ ± 3σ (99.73%)</button>
+                </div>
+              </div>
+
+              <div class="toolbar-group" style="margin-left: auto;">
+                <button type="button" id="btn-toggle-histogram" class="btn-secondary-sm btn-toggle-active">
+                  ✓ Empirical Histogram Overlay
+                </button>
+              </div>
+            </div>
+
+            <!-- Mathematical Normal Curve Plot -->
+            <div class="instrument-body">
+              <div id="dist-bell-container" style="min-height: 360px;">
+                <!-- Full SVG Normal Distribution Curve injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Empirical Rule Classification Cards (CO3) -->
+          <div class="empirical-rule-strip">
+            <div class="empirical-rule-card tier-1">
+              <div class="er-header">
+                <span class="er-title">Normal Range</span>
+                <span class="er-tag">|Z| ≤ 1.0</span>
+              </div>
+              <div class="er-count mono-num" id="er-count-tier1">82.0% (91/111)</div>
+              <div class="er-sub">Theoretical: 68.27% • Expected operation</div>
+            </div>
+
+            <div class="empirical-rule-card tier-2">
+              <div class="er-header">
+                <span class="er-title">Moderate Variation</span>
+                <span class="er-tag">1.0 &lt; |Z| ≤ 2.0</span>
+              </div>
+              <div class="er-count mono-num" id="er-count-tier2">11.7% (13/111)</div>
+              <div class="er-sub">Theoretical: 27.18% • Normal peak hours</div>
+            </div>
+
+            <div class="empirical-rule-card tier-3">
+              <div class="er-header">
+                <span class="er-title">Unusual Observation</span>
+                <span class="er-tag">2.0 &lt; |Z| ≤ 3.0</span>
+              </div>
+              <div class="er-count mono-num" id="er-count-tier3">6.3% (7/111)</div>
+              <div class="er-sub">Theoretical: 4.28% • High alert warning</div>
+            </div>
+
+            <div class="empirical-rule-card tier-4">
+              <div class="er-header">
+                <span class="er-title">Extreme Outlier / Anomaly</span>
+                <span class="er-tag">|Z| &gt; 3.0</span>
+              </div>
+              <div class="er-count mono-num" id="er-count-tier4">0.0% (0/111)</div>
+              <div class="er-sub">Theoretical: 0.27% • Flagged for DDoS / Failure</div>
+            </div>
+          </div>
+
+          <!-- Evaluated Analytical Results Layout -->
+          <div class="editorial-grid-12" style="margin-top: 18px;">
+            <div class="col-12">
+              <div class="surface-instrument" style="height: 100%;">
+                <div class="instrument-header">
+                  <div class="instrument-title">
+                    <span>Evaluated Analytical Results & Intelligent System Decisions</span>
+                  </div>
+                  <div class="instrument-meta">Dynamic Integration</div>
+                </div>
+                <div class="instrument-body">
+                  <div class="stat-strip-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 16px;">
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">
+                        <span id="dist-calc-prob-label">Computed Probability</span>
+                      </div>
+                      <div class="stat-tile-val mono-num" id="dist-calc-prob-val">
+                        0.2690
+                      </div>
+                      <div class="stat-tile-sub" id="dist-calc-prob-percent">26.90% probability</div>
+                    </div>
+
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">
+                        <span>Standardized Score (Z-Score)</span>
+                      </div>
+                      <div class="stat-tile-val mono-num" id="dist-calc-z-val">
+                        +0.61
+                      </div>
+                      <div class="stat-tile-sub">Z = (X - μ) / σ</div>
+                    </div>
+                  </div>
+
+                  <div class="interpretation-box" id="dist-calc-interpretation">
+                    <div class="interpretation-title">
+                      <span>Network Engineering Application to Intelligent Autoscaling</span>
+                    </div>
+                    <div class="interpretation-text" id="dist-calc-interpretation-text">
+                      Evaluating upper tail exceedance probability allows distributed systems engineers to dimension router queue depths and link headroom.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SECTION 2: TRAFFIC TRENDS — TIME-SERIES ANALYSIS
+             =================================================================== -->
+        <section id="pane-time-series" class="section-pane" role="tabpanel" aria-labelledby="nav-time-series">
+          <div class="editorial-header">
+            <div>
+              <div class="editorial-tagline">
+                <span>02 / CENTRAL TENDENCY & TIME-SERIES ANALYSIS</span>
+              </div>
+              <h1 class="editorial-h1">Traffic Trends, Moving Averages & Central Tendency</h1>
+              <p class="editorial-intro">
+                Chronologically ordered campus observations (1.5-hour intervals, Oct 17 – Oct 24, 2026). Centered Moving Averages (3-period and 5-period) provide retrospective noise filtering and trend isolation.
+              </p>
+            </div>
+          </div>
+
+          <!-- Time-Series Controls & Chart -->
+          <div class="surface-instrument" style="margin-bottom: 24px;">
+            <div class="interactive-toolbar">
+              <div class="toolbar-group">
+                <span class="toolbar-label">Moving Average Filter:</span>
+                <div class="radio-group-tabs" id="ma-window-tabs">
+                  <button type="button" class="radio-tab-btn active" data-ma-mode="cma_3">Centered MA (3-period)</button>
+                  <button type="button" class="radio-tab-btn" data-ma-mode="cma_5">Centered MA (5-period)</button>
+                </div>
+              </div>
+
+              <div class="toolbar-group" style="margin-left: auto;">
+                <span class="toolbar-label">Linear Drift β:</span>
+                <span class="mono-num" id="trend-slope-val" style="font-weight: 600;">+0.012 Mbps/step</span>
+                <span class="mono-num" id="trend-r2-val" style="font-size: 0.8rem; color: var(--slate);">R² = 0.05</span>
+                <span class="nav-badge-pill" id="trend-direction-badge">Stable</span>
+              </div>
+            </div>
+
+            <div class="instrument-body">
+              <div id="timeseries-full-chart-container" style="min-height: 340px;">
+                <!-- Full Time-Series SVG Chart -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Moving Average Mathematical Foundation -->
+          <div class="editorial-grid-12">
+            <div class="col-5">
+              <div class="surface-instrument" style="height: 100%;">
+                <div class="instrument-header">
+                  <div class="instrument-title">
+                    <span id="trend-ma-formula-label">Smoothing Theory & Lecture Alignment</span>
+                  </div>
+                  <div class="instrument-meta">Module 4 Alignment</div>
+                </div>
+                <div class="instrument-body">
+                  <div class="formula-callout">
+                    <span class="formula-label">Variance Attenuation Formula</span>
+                    <code>Var(MAₜ) = σ² / k   (for independent observations)</code>
+                  </div>
+                  <p id="trend-ma-desc" style="font-size: 0.86rem; color: var(--ink-secondary); margin-bottom: 12px;">
+                    Increasing window size $k$ dampens high-frequency jitter by factor $k$. Centered windows (3-period & 5-period centered) eliminate phase distortion for retrospective trend reporting.
+                  </p>
+                  <div class="formula-callout">
+                    <span class="formula-label">Linear Regression Trend Line</span>
+                    <code>y = β · t + α,   β = [N∑ty - (∑t)(∑y)] / [N∑t² - (∑t)²]</code>
+                  </div>
+                  <p style="font-size: 0.82rem; color: var(--slate);">
+                    Evaluates long-term weekly structural drift across the 111 campus observation points.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Underlying Observations Data Table (7 Columns) -->
+            <div class="col-7">
+              <div class="surface-instrument">
+                <div class="instrument-header">
+                  <div class="instrument-title">
+                    <span>Campus Telemetry Table [t, IST Timestamp, Total, Rx, Tx, z-Score, MA]</span>
+                  </div>
+                  <div class="instrument-meta">
+                    <span id="table-row-count-badge" class="mono-num">All 111 Observations</span>
+                  </div>
+                </div>
+                <div class="instrument-body" style="padding: 0;">
+                  <div class="table-container" style="max-height: 340px; border: none;">
+                    <table class="scientific-table" id="observations-data-table">
+                      <thead>
+                        <tr>
+                          <th>Idx</th>
+                          <th>Timestamp (IST)</th>
+                          <th>Total (Mbps)</th>
+                          <th>Rx</th>
+                          <th>Tx</th>
+                          <th>Deviation</th>
+                          <th>z-Score</th>
+                          <th>MA</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="observations-table-body">
+                        <!-- Rows injected via JS -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SECTION 3: STATISTICAL VALIDATION (CHI-SQUARE & F-TEST)
+             =================================================================== -->
+        <section id="pane-validation" class="section-pane" role="tabpanel" aria-labelledby="nav-validation">
+          <div class="editorial-header">
+            <div>
+              <div class="editorial-tagline">
+                <span>03 / HYPOTHESIS TESTING & STATISTICAL VALIDATION</span>
+              </div>
+              <h1 class="editorial-h1">Hypothesis Testing: Chi-Square & Two-Sample F-Test</h1>
+              <p class="editorial-intro">
+                Rigorous empirical validation using the <strong>Chi-Square Goodness-of-Fit test</strong> (with parameter-corrected degrees of freedom df = k - 3) to evaluate the Gaussian assumption, and the <strong>Two-Sample F-Test</strong> to evaluate variance stationarity between Weekend and Weekday operational intervals.
+              </p>
+            </div>
+          </div>
+
+          <!-- PANEL 1: CHI-SQUARE GOODNESS-OF-FIT TEST -->
+          <div class="surface-instrument" style="margin-bottom: 28px;">
+            <div class="instrument-header">
+              <div class="instrument-title">
+                <span>1. Chi-Square Goodness-of-Fit Test for Normality (df = k - 3)</span>
+              </div>
+              <div class="toolbar-group">
+                <label for="chi-bins-select" class="toolbar-label">Bins (k):</label>
+                <select id="chi-bins-select" class="control-select" style="width: 70px; padding: 3px 6px;">
+                  <option value="5">5</option>
+                  <option value="6" selected>6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                </select>
+
+                <label for="chi-alpha-select" class="toolbar-label" style="margin-left: 10px;">Significance (α):</label>
+                <select id="chi-alpha-select" class="control-select" style="width: 75px; padding: 3px 6px;">
+                  <option value="0.01">0.01</option>
+                  <option value="0.05" selected>0.05</option>
+                  <option value="0.10">0.10</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="instrument-body">
+              <div class="editorial-grid-12" style="margin-bottom: 0;">
+                <!-- Test Metrics & Hypotheses (4 Columns) -->
+                <div class="col-4">
+                  <div class="formula-callout" style="margin-top: 0;">
+                    <span class="formula-label">Goodness-of-Fit Hypotheses</span>
+                    <strong>H₀:</strong> Observed traffic follows Normal N(μ, σ²)<br>
+                    <strong>H₁:</strong> Observed traffic departs from Normal
+                  </div>
+
+                  <div class="formula-callout">
+                    <span class="formula-label">Degrees of Freedom Correction</span>
+                    <code>df = k - 1 - p = k - 3   (for estimated μ̂ and σ̂)</code>
+                  </div>
+
+                  <div class="stat-strip-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px;">
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Statistic (χ²)</div>
+                      <div class="stat-tile-val mono-num" id="chi-stat-val">--</div>
+                      <div class="stat-tile-sub">∑ (Oᵢ - Eᵢ)² / Eᵢ</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Degrees of Freedom</div>
+                      <div class="stat-tile-val mono-num" id="chi-df-val">--</div>
+                      <div class="stat-tile-sub">df = k - 3</div>
+                    </div>
+                  </div>
+
+                  <div class="stat-strip-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">p-value</div>
+                      <div class="stat-tile-val mono-num" id="chi-p-val">--</div>
+                      <div class="stat-tile-sub">Q(df/2, χ²/2)</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Decision (α = <span id="chi-alpha-label">0.05</span>)</div>
+                      <div class="stat-tile-val" id="chi-decision-val" style="font-size: 1.15rem; font-weight: 700;">--</div>
+                      <div class="stat-tile-sub" id="chi-decision-sub">--</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Frequency Comparison Bar Chart (8 Columns) -->
+                <div class="col-8">
+                  <div id="chi-square-chart-container" style="min-height: 280px;">
+                    <!-- Grouped Bar Chart injected via JS -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cochran's Condition Alert Box -->
+              <div id="chi-cochran-alert" class="interpretation-box warning" style="display: none; margin-top: 14px;">
+                <div class="interpretation-title">
+                  <span>Cochran Rule Warning for Small Expected Frequencies</span>
+                </div>
+                <div class="interpretation-text" id="chi-cochran-text">
+                  Expected frequency condition check.
+                </div>
+              </div>
+
+              <!-- Chi-Square Academic Interpretation -->
+              <div class="interpretation-box" id="chi-interpretation-box" style="margin-top: 14px;">
+                <div class="interpretation-title">
+                  <span>Honest Empirical Finding & Literature Alignment</span>
+                </div>
+                <div class="interpretation-text" id="chi-interpretation-text">
+                  Evaluating hypotheses...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 2: TWO-SAMPLE F-TEST FOR VARIANCE EQUALITY -->
+          <div class="surface-instrument">
+            <div class="instrument-header">
+              <div class="instrument-title">
+                <span>2. Two-Sample F-Test for Variance Equality (Weekend vs. Weekday Link Volatility)</span>
+              </div>
+              <div class="toolbar-group">
+                <label for="f-alpha-select" class="toolbar-label">Significance (α):</label>
+                <select id="f-alpha-select" class="control-select" style="width: 75px; padding: 3px 6px;">
+                  <option value="0.01">0.01</option>
+                  <option value="0.05" selected>0.05</option>
+                  <option value="0.10">0.10</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="instrument-body">
+              <div class="editorial-grid-12" style="margin-bottom: 0;">
+                <!-- F-Test Metrics (4 Columns) -->
+                <div class="col-4">
+                  <div class="formula-callout" style="margin-top: 0;">
+                    <span class="formula-label">F-Test Hypotheses</span>
+                    <strong>H₀:</strong> σ₁² = σ₂² (Stationary link dispersion)<br>
+                    <strong>H₁:</strong> σ₁² ≠ σ₂² (Dispersion / Volatility shift)
+                  </div>
+
+                  <div class="formula-callout">
+                    <span class="formula-label">F-Test Statistic</span>
+                    <code>F = s₁² / s₂²   (df₁ = n₁ - 1, df₂ = n₂ - 1)</code>
+                  </div>
+
+                  <div class="stat-strip-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px;">
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">F-Statistic</div>
+                      <div class="stat-tile-val mono-num" id="f-stat-val">--</div>
+                      <div class="stat-tile-sub">Ratio s₁² / s₂²</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Degrees of Freedom</div>
+                      <div class="stat-tile-val mono-num" id="f-df-val">--</div>
+                      <div class="stat-tile-sub">(n₁ - 1, n₂ - 1)</div>
+                    </div>
+                  </div>
+
+                  <div class="stat-strip-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Two-tailed p-value</div>
+                      <div class="stat-tile-val mono-num" id="f-p-val">--</div>
+                      <div class="stat-tile-sub">I_x(df₁/2, df₂/2)</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="stat-tile-notation">Decision</div>
+                      <div class="stat-tile-val" id="f-decision-val" style="font-size: 1.15rem; font-weight: 700;">--</div>
+                      <div class="stat-tile-sub" id="f-decision-sub">--</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Split Variance Plot (8 Columns) -->
+                <div class="col-8">
+                  <div id="f-test-chart-container" style="min-height: 260px;">
+                    <!-- Split Variance SVG Chart injected via JS -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- F-Test Assumptions & Engineering Interpretation -->
+              <div class="interpretation-box" id="f-interpretation-box" style="margin-top: 14px;">
+                <div class="interpretation-title">
+                  <span>Empirical Finding: Weekend vs. Weekday Volatility Shift</span>
+                </div>
+                <div class="interpretation-text" id="f-interpretation-text">
+                  Evaluating F-test...
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             SECTION 4: DATA & METHODOLOGY
+             =================================================================== -->
+        <section id="pane-methodology" class="section-pane" role="tabpanel" aria-labelledby="nav-methodology">
+          <div class="editorial-header">
+            <div>
+              <div class="editorial-tagline">
+                <span>04 / CSV INTERFACE & SIMULATION</span>
+              </div>
+              <h1 class="editorial-h1">CSV Interface & Pedagogical Sandbox</h1>
+              <p class="editorial-intro">
+                Interactive tool for ingesting custom telemetry CSV files or generating parameterized Gaussian distributions via the Box-Muller transformation.
+              </p>
+            </div>
+          </div>
+
+          <div class="editorial-grid-12">
+            <!-- Parametric Synthesizer & Custom CSV Upload -->
+            <div class="col-12" style="max-width: 820px; margin: 0 auto;">
+              <div class="surface-instrument">
+                <div class="instrument-header">
+                  <div class="instrument-title">
+                    <span>Pedagogical Sandbox & CSV Interface</span>
+                  </div>
+                  <div class="instrument-meta">What-If Simulation & Upload</div>
+                </div>
+                <div class="instrument-body">
+                  <p style="font-size: 0.86rem; color: var(--ink-secondary); margin-bottom: 14px;">
+                    Generate synthetic Gaussian observations via Box-Muller transform: $Z = \sqrt{-2\ln(U_1)}\cos(2\pi U_2)$, or upload your own CSV.
+                  </p>
+
+                  <div class="control-group">
+                    <label class="control-label" for="synth-n">
+                      <span>Sample Size (N)</span>
+                      <span id="synth-n-val" class="mono-num">48</span>
+                    </label>
+                    <input type="range" id="synth-n" class="control-range" min="24" max="100" step="4" value="48">
+                  </div>
+
+                  <div class="control-group">
+                    <label class="control-label" for="synth-mean">
+                      <span>Target Mean μ (Mbps)</span>
+                      <span id="synth-mean-val" class="mono-num">50.0</span>
+                    </label>
+                    <input type="range" id="synth-mean" class="control-range" min="20" max="80" step="1" value="50">
+                  </div>
+
+                  <div class="control-group">
+                    <label class="control-label" for="synth-std">
+                      <span>Target Std Dev σ (Mbps)</span>
+                      <span id="synth-std-val" class="mono-num">8.0</span>
+                    </label>
+                    <input type="range" id="synth-std" class="control-range" min="2" max="22" step="0.5" value="8">
+                  </div>
+
+                  <div style="display: flex; gap: 10px; margin-top: 16px; margin-bottom: 16px;">
+                    <button type="button" id="btn-generate-custom" class="btn-primary">
+                      Generate Sandbox Sample
+                    </button>
+                    <button type="button" id="btn-download-csv" class="btn-secondary">
+                      Export Current as CSV
+                    </button>
+                  </div>
+
+                  <!-- CSV Drop Zone -->
+                  <div class="csv-drop-zone" id="csv-drop-zone" tabindex="0" role="button" aria-label="Upload CSV File">
+                    <div class="csv-icon">⤓</div>
+                    <div style="font-weight: 600; color: var(--ink); font-size: 0.88rem;">Drop Custom CSV to Ingest</div>
+                    <div style="font-size: 0.76rem; color: var(--slate);">Format: timestamp, load_mbps</div>
+                    <input type="file" id="csv-file-input" accept=".csv,text/csv" style="display: none;">
+                  </div>
+                  <div id="csv-upload-status" style="margin-top: 10px; font-size: 0.84rem; display: none;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Observatory Academic Footer -->
+      <footer class="observatory-footer" style="padding: 24px 32px;">
+        <div>
+          <span>NETLOAD Observatory</span> • <span>Precision Network Traffic Statistical Observatory</span>
+        </div>
+        <div>
+          <span>Department of Computer Science & Engineering</span> • <span>Telemetry Analysis System</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Main Application Script -->
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
