@@ -270,6 +270,10 @@ function updateOverviewSection({ data, loads, mean, median, modeObj, sigma, vari
   if (elValSkew) elValSkew.textContent = skewness > 0 ? `+${skewness.toFixed(2)}` : skewness.toFixed(2);
   if (elValSigma) elValSigma.textContent = sigma.toFixed(1);
   if (elValVariance) elValVariance.textContent = variance.toFixed(1);
+  const elValMax = document.getElementById('overview-val-max');
+  if (elValMax && loads && loads.length > 0) {
+    elValMax.textContent = Math.max(...loads).toFixed(1);
+  }
   
   if (elValZ) {
     elValZ.textContent = (currentZ >= 0 ? `+${currentZ.toFixed(2)}` : currentZ.toFixed(2));
